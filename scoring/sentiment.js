@@ -1,23 +1,35 @@
 // scoring/sentiment.js
-// Replaces vader-sentiment (deprecated) with "sentiment" library
+// Uses "sentiment-lite" (Vercel-compatible)
 
-const Sentiment = require("sentiment");
-const analyzer = new Sentiment();
+const sentiment = require("sentiment-lite");
 
 module.exports = {
   evaluate(text) {
-    const result = analyzer.analyze(text);
+    const result = sentiment(text);
 
-    const totalWords = text.trim().split(/\s+/).length || 1;
-    const positiveCount = result.positive.length;
+    // sentiment-lite returns an integer score
+    // negative → negative
+    // positive → positive
+    // We map this to positivity ratio:
 
-    const posScore = positiveCount / totalWords; // 0 to 1 scale
+    const words = text.trim().split(/\s+/).length || 1;
+    const positivity = Math.max(0, result.score) / words; // 0 → ~1 scale
+
     let score = 0;
 
-    if (posScore >= 0.9) score = 15;
-    else if (posScore >= 0.7) score = 12;
-    else if (posScore >= 0.5) score = 9;
-    else if (posScore >= 0.3) score = 6;
+    /*
+      Rubric:
+      >=0.9 → 15
+      0.7–0.89 → 12
+      0.5–0.69 → 9
+      0.3–0.49 → 6
+      <0.3 → 3
+    */
+
+    if (positivity >= 0.9) score = 15;
+    else if (positivity >= 0.7) score = 12;
+    else if (positivity >= 0.5) score = 9;
+    else if (positivity >= 0.3) score = 6;
     else score = 3;
 
     return {

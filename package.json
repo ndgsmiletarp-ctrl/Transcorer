@@ -5,6 +5,6 @@
   "dependencies": {
     "natural": "^6.5.0",
     "node-fetch": "^3.3.2",
-    "sentiment": "^5.0.5"
+    "sentiment-lite": "^1.0.4"
   }
 }
