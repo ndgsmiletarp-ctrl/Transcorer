@@ -1,10 +1,10 @@
 {
-  "name": "transcript-scorer",
+  "name": "transcorer",
   "version": "1.0.0",
   "type": "commonjs",
   "dependencies": {
-    "vader-sentiment": "^1.1.4",
+    "natural": "^6.5.0",
     "node-fetch": "^3.3.2",
-    "natural": "^6.5.0"
+    "vader-sentiment": "^1.2.1"
   }
 }
