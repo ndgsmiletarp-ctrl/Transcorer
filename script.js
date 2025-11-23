@@ -213,7 +213,7 @@ function escapeHtml(str){
 async function postScore(text, duration){
   const payload = { text, duration: Number(duration) };
 
-  const resp = await fetch('https://YOUR-VERCEL-APP-NAME.vercel.app/api/scoreTranscript', {
+  const resp = await fetch('https://transcorer-c13ef.vercel.app/api/scoreTranscript', {
     method: 'POST',
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify(payload)
