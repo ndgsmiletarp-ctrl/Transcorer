@@ -3,144 +3,140 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rule-Based Transcript Scorer</title>
+  <title>Transcript Scorer • Transcorer</title>
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 
-  <!-- Chart.js CDN -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
-  <!-- html2canvas + jsPDF for PDF export -->
+  <!-- html2canvas + jspdf for PDF export -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="app-header">
-    <div class="brand">
-      <h1>Transcript Scorer</h1>
-      <small class="subtitle">Rule-based scoring · No AI models</small>
-    </div>
-
-    <div class="header-right">
-      <a class="rubric-link" id="rubricLink" href="/mnt/data/Case study for interns.xlsx.pdf" target="_blank" rel="noopener">View Rubric (PDF)</a>
-
-      <label class="theme-toggle">
-        <input id="themeToggle" type="checkbox" aria-label="Toggle dark mode">
-        <span class="toggle-slider"></span>
-      </label>
-      <span id="themeText" class="theme-text">Light</span>
-    </div>
-  </header>
-
-  <main class="layout">
-    <!-- LEFT: Input panel -->
-    <section class="panel panel-left">
-      <h2>Input</h2>
-
-      <label for="transcript">Transcript</label>
-      <textarea id="transcript" placeholder="Paste transcript text here..."></textarea>
-
-      <div class="row small">
-        <div class="field">
-          <label for="duration">Duration (seconds)</label>
-          <input id="duration" type="number" min="1" placeholder="e.g. 60" />
-        </div>
-
-        <div class="field">
-          <label for="fileInput">Upload .txt</label>
-          <input id="fileInput" type="file" accept=".txt" />
+  <div class="app shell">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">TS</div>
+        <div>
+          <h1>Transcorer</h1>
+          <small class="tag">Rule-based Transcript Scoring</small>
         </div>
       </div>
 
-      <div class="row actions">
-        <button id="sampleBtn" class="btn">Load Sample</button>
-        <button id="resetBtn" class="btn ghost">Reset</button>
-        <button id="scoreBtn" class="btn primary">Score Transcript</button>
+      <div class="header-actions">
+        <a class="rubric" href="/mnt/data/Case study for interns.xlsx.pdf" target="_blank" rel="noopener">View Rubric (PDF)</a>
+
+        <div class="theme-switch">
+          <label class="switch">
+            <input id="themeToggle" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
       </div>
+    </header>
 
-      <div id="formMessage" class="form-message" aria-live="polite"></div>
+    <main class="main-grid">
+      <!-- LEFT: Inputs -->
+      <section class="card input-card">
+        <h2>Paste or upload transcript</h2>
+        <textarea id="transcript" placeholder="Paste your introduction transcript here..." aria-label="Transcript"></textarea>
 
-      <details class="notes">
-        <summary>Quick notes</summary>
-        <ul>
-          <li>Paste text or upload a <code>.txt</code> file.</li>
-          <li>Duration should be the spoken length in seconds.</li>
-          <li>Scoring follows the rubric in the provided PDF.</li>
-        </ul>
-      </details>
-    </section>
-
-    <!-- RIGHT: Results panel -->
-    <section class="panel panel-right">
-      <div id="loader" class="loader hidden" aria-hidden="true">
-        <div class="spinner" role="status" aria-hidden="true"></div>
-        <div class="loader-text">Scoring transcript...</div>
-      </div>
-
-      <div id="results" class="results hidden" aria-live="polite">
-        <div class="top-row">
-          <div class="score-circle">
-            <div class="score-number" id="overallScore">0</div>
-            <div class="score-label">Overall</div>
+        <div class="row small">
+          <div class="field">
+            <label for="duration">Duration (seconds)</label>
+            <input id="duration" type="number" min="1" inputmode="numeric" placeholder="e.g. 60">
           </div>
+          <div class="field">
+            <label for="fileInput">Upload .txt</label>
+            <input id="fileInput" type="file" accept=".txt">
+          </div>
+        </div>
 
-          <div class="mini-cards">
-            <div class="mini">
-              <div class="mini-title">Words</div>
-              <div id="wordCount" class="mini-value">0</div>
+        <div class="row actions">
+          <button id="sampleBtn" class="btn ghost">Sample</button>
+          <button id="resetBtn" class="btn">Reset</button>
+          <button id="scoreBtn" class="btn primary">Score Transcript</button>
+        </div>
+
+        <div id="formMessage" class="msg" aria-live="polite"></div>
+
+        <details class="notes">
+          <summary>Tips</summary>
+          <ul>
+            <li>Keep introduction 30–120s for best WPM scoring.</li>
+            <li>Remove long pauses and filler words for clarity.</li>
+          </ul>
+        </details>
+      </section>
+
+      <!-- RIGHT: Results -->
+      <section class="card result-card" id="resultPanel" aria-live="polite">
+        <div id="loader" class="loader hidden">
+          <div class="spinner"></div>
+          <div>Scoring...</div>
+        </div>
+
+        <div id="results" class="results hidden">
+          <div class="score-row">
+            <div class="badge">
+              <div id="overallScore" class="big">0</div>
+              <div class="label">Overall</div>
             </div>
-            <div class="mini">
-              <div class="mini-title">Sentences</div>
-              <div id="sentenceCount" class="mini-value">0</div>
+
+            <div class="mini-stats">
+              <div class="mini">
+                <div class="m-title">Words</div>
+                <div id="wordCount" class="m-value">0</div>
+              </div>
+              <div class="mini">
+                <div class="m-title">Sentences</div>
+                <div id="sentenceCount" class="m-value">0</div>
+              </div>
+              <div class="mini">
+                <div class="m-title">WPM</div>
+                <div id="wpm" class="m-value">0</div>
+              </div>
             </div>
-            <div class="mini">
-              <div class="mini-title">WPM</div>
-              <div id="wpm" class="mini-value">0</div>
+          </div>
+
+          <div class="metrics-chart">
+            <div class="metrics-table-wrap">
+              <h3>Per-metric scores</h3>
+              <table id="metricsTable" class="metrics-table" aria-describedby="metricsDesc">
+                <caption id="metricsDesc" class="sr-only">Metric scores</caption>
+                <thead><tr><th>Metric</th><th>Score</th><th>Max</th><th>Feedback</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+            <div class="chart-wrap">
+              <h3>Overview</h3>
+              <canvas id="metricsChart" width="400" height="300"></canvas>
+            </div>
+          </div>
+
+          <div class="suggest-actions">
+            <div class="suggestions">
+              <h4>Suggestions</h4>
+              <ul id="suggestionsList"></ul>
+            </div>
+            <div class="actions-vertical">
+              <button id="downloadJson" class="btn small">Download JSON</button>
+              <button id="exportPdf" class="btn small">Export PDF</button>
             </div>
           </div>
         </div>
+      </section>
+    </main>
 
-        <div class="middle-row">
-          <div class="metrics">
-            <h3>Metric scores</h3>
-            <table id="metricsTable" class="metrics-table" aria-describedby="metricsDesc">
-              <caption id="metricsDesc" class="sr-only">Per-metric scores and feedback</caption>
-              <thead>
-                <tr><th>Metric</th><th>Score</th><th>Max</th><th>Feedback</th></tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+    <footer class="footer">
+      <small>Made with ❤️ — Rule-based scoring only (no AI models)</small>
+    </footer>
+  </div>
 
-          <div class="chart">
-            <h3>Category chart</h3>
-            <canvas id="metricsChart" width="400" height="320" aria-label="Bar chart of metric percentages"></canvas>
-          </div>
-        </div>
-
-        <div class="bottom-row">
-          <div id="suggestions" class="suggestions">
-            <h3>Improvement suggestions</h3>
-            <ul id="suggestionsList"></ul>
-          </div>
-
-          <div class="result-actions">
-            <button id="downloadJson" class="btn">Download JSON</button>
-            <button id="exportPdf" class="btn">Export PDF</button>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <small>Built with HTML • CSS • JavaScript — No AI used for scoring</small>
-  </footer>
-
-  <!-- Main script -->
   <script src="script.js"></script>
 </body>
 </html>
