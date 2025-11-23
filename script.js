@@ -73,7 +73,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 /* ---------------------------
-   Sample transcript (button)
+   Sample transcript
 --------------------------- */
 sampleBtn.addEventListener('click', () => {
   const sample = `Hello everyone, my name is Aisha. I am 12 years old and I study in class 7 at Starlight School. I live with my family which includes my parents and one younger brother. I enjoy painting and reading books in my free time. A fun fact about me is that I bake cupcakes for my friends. My ambition is to become a doctor and help people. Thank you for listening.`;
@@ -94,7 +94,7 @@ resetBtn.addEventListener('click', () => {
 });
 
 /* ---------------------------
-   Validators
+   Validation
 --------------------------- */
 function countWords(text){
   if(!text) return 0;
@@ -108,7 +108,7 @@ function countSentences(text){
 
 function validate(text, duration){
   if(!text || !text.trim()) return 'Please paste or upload a transcript.';
-  if(!duration || isNaN(duration) || Number(duration) <= 0) return 'Please enter a valid duration in seconds.';
+  if(!duration || isNaN(duration) || Number(duration) <= 0) return 'Please enter a valid duration.';
   if(countWords(text) < 3) return 'Transcript too short.';
   return null;
 }
@@ -118,11 +118,8 @@ function validate(text, duration){
 --------------------------- */
 function showLoader(show){
   loader.classList.toggle('hidden', !show);
-  if(show) {
-    resultsCard.classList.add('hidden');
-  } else {
-    resultsCard.classList.remove('hidden');
-  }
+  if(show) resultsCard.classList.add('hidden');
+  else resultsCard.classList.remove('hidden');
 }
 
 function clearResults(){
@@ -132,7 +129,65 @@ function clearResults(){
 }
 
 /* ---------------------------
-   Render results
+   POST to Vercel API
+--------------------------- */
+async function postScore(text, duration){
+  const payload = { text, duration: Number(duration) };
+
+  const resp = await fetch('https://transcorer-ou6n.vercel.app/api/scoreTranscript', {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if(!resp.ok){
+    const t = await resp.text();
+    throw new Error('Server error: ' + resp.status + ' - ' + t);
+  }
+
+  return resp.json();
+}
+
+/* ---------------------------
+   Score button
+--------------------------- */
+scoreBtn.addEventListener('click', async () => {
+  formMessage.textContent = '';
+  clearResults();
+
+  const text = transcriptEl.value;
+  const duration = durationEl.value;
+
+  const v = validate(text, duration);
+  if(v){ formMessage.textContent = v; return; }
+
+  showLoader(true);
+
+  try {
+    const wc = countWords(text);
+    const sCount = countSentences(text);
+    const wpmCalc = Math.round(wc / (Number(duration)/60));
+
+    const json = await postScore(text, duration);
+
+    if(!json.sentence_count) json.sentence_count = sCount;
+    if(!json.word_count) json.word_count = wc;
+    if(!json.wpm) json.wpm = wpmCalc;
+
+    renderResults(json);
+    formMessage.textContent = 'Scoring complete.';
+  }
+  catch(err){
+    console.error(err);
+    formMessage.textContent = 'Error: ' + err.message;
+  }
+  finally{
+    showLoader(false);
+  }
+});
+
+/* ---------------------------
+   Render results to UI
 --------------------------- */
 function renderResults(json){
   lastResponse = json;
@@ -140,7 +195,7 @@ function renderResults(json){
   overallScoreEl.textContent = Math.round(json.overall_score || 0);
   wordCountEl.textContent = json.word_count || 0;
 
-  const sCount = json.sentence_count !== undefined ? json.sentence_count : countSentences(transcriptEl.value);
+  const sCount = json.sentence_count ?? countSentences(transcriptEl.value);
   sentenceCountEl.textContent = sCount;
 
   wpmEl.textContent = Math.round(json.wpm || 0);
@@ -174,7 +229,11 @@ function renderResults(json){
 
   const labels = json.metrics.map(m => m.metric);
   const percents = json.metrics.map(m => Math.round((m.score / m.max) * 100));
-  const colors = percents.map(p => p >= 80 ? 'rgba(34,197,94,0.85)' : p >= 50 ? 'rgba(245,158,11,0.85)' : 'rgba(239,68,68,0.85)');
+  const colors = percents.map(p =>
+    p >= 80 ? 'rgba(34,197,94,0.85)' :
+    p >= 50 ? 'rgba(245,158,11,0.85)' :
+             'rgba(239,68,68,0.85)'
+  );
 
   const ctx = document.getElementById('metricsChart').getContext('2d');
   if(chart) chart.destroy();
@@ -202,68 +261,10 @@ function renderResults(json){
 
 function escapeHtml(str){
   if(!str) return '';
-  return String(str).replace(/[&<>"']/g, function(m){
-    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
-  });
+  return String(str).replace(/[&<>"']/g, m =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]
+  );
 }
-
-/* ---------------------------
-   POST to backend (Vercel)
---------------------------- */
-async function postScore(text, duration){
-  const payload = { text, duration: Number(duration) };
-
-  const resp = await fetch('https://transcorer-ou6n.vercel.app/', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  });
-
-  if(!resp.ok){
-    const t = await resp.text();
-    throw new Error('Server error: ' + resp.status + ' - ' + t);
-  }
-
-  return resp.json();
-}
-
-/* ---------------------------
-   Score button
---------------------------- */
-scoreBtn.addEventListener('click', async () => {
-  formMessage.textContent = '';
-  clearResults();
-
-  const text = transcriptEl.value;
-  const duration = durationEl.value;
-
-  const v = validate(text, duration);
-  if(v){ formMessage.textContent = v; return; }
-
-  showLoader(true);
-
-  try{
-    const wc = countWords(text);
-    const sCount = countSentences(text);
-    const wpmCalc = Math.round(wc / (Number(duration)/60));
-
-    const json = await postScore(text, duration);
-
-    if(!json.sentence_count) json.sentence_count = sCount;
-    if(!json.word_count) json.word_count = wc;
-    if(!json.wpm) json.wpm = wpmCalc;
-
-    renderResults(json);
-    formMessage.textContent = 'Scoring complete.';
-  }
-  catch(err){
-    console.error(err);
-    formMessage.textContent = 'Error: ' + err.message;
-  }
-  finally{
-    showLoader(false);
-  }
-});
 
 /* ---------------------------
    Download JSON
@@ -281,12 +282,11 @@ downloadJsonBtn.addEventListener('click', () => {
 
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; 
+  a.href = url;
   a.download = 'transcript_score.json';
-  document.body.appendChild(a); 
-  a.click(); 
+  document.body.appendChild(a);
+  a.click();
   a.remove();
-
   URL.revokeObjectURL(url);
 });
 
@@ -301,7 +301,7 @@ exportPdfBtn.addEventListener('click', async () => {
 
   formMessage.textContent = 'Preparing PDF...';
 
-  try{
+  try {
     const node = document.querySelector('.results');
     const canvas = await html2canvas(node, { scale:2, useCORS:true });
     const img = canvas.toDataURL('image/png');
