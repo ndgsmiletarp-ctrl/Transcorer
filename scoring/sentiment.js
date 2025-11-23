@@ -1,28 +1,30 @@
-// functions/scoring/sentiment.js
-const vader = require("vader-sentiment");
+// scoring/sentiment.js
+// Replaces vader-sentiment (deprecated) with "sentiment" library
+
+const Sentiment = require("sentiment");
+const analyzer = new Sentiment();
 
 module.exports = {
   evaluate(text) {
-    const scores = vader.SentimentIntensityAnalyzer.polarity_scores(text);
-    const pos = scores.pos || 0;
+    const result = analyzer.analyze(text);
 
+    const totalWords = text.trim().split(/\s+/).length || 1;
+    const positiveCount = result.positive.length;
+
+    const posScore = positiveCount / totalWords; // 0 to 1 scale
     let score = 0;
-    let feedback = "";
 
-    if (pos >= 0.9) score = 15;
-    else if (pos >= 0.7) score = 12;
-    else if (pos >= 0.5) score = 9;
-    else if (pos >= 0.3) score = 6;
-    else {
-      score = 3;
-      feedback = "Try sounding more positive or enthusiastic.";
-    }
+    if (posScore >= 0.9) score = 15;
+    else if (posScore >= 0.7) score = 12;
+    else if (posScore >= 0.5) score = 9;
+    else if (posScore >= 0.3) score = 6;
+    else score = 3;
 
     return {
-      metric: "Engagement / Sentiment",
+      metric: "Sentiment / Engagement",
       score,
       max: 15,
-      feedback
+      feedback: ""
     };
   }
 };
