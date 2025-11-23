@@ -1,35 +1,34 @@
 // scoring/sentiment.js
-// Uses "sentiment-lite" (Vercel-compatible)
+// Pure rule-based positivity scorer (no dependencies)
 
-const sentiment = require("sentiment-lite");
+const positiveWords = [
+  "good", "great", "happy", "excited", "joy", "love",
+  "enjoy", "proud", "fun", "wonderful", "excellent",
+  "positive", "glad", "best", "amazing", "awesome",
+  "thank", "thanks"
+];
 
 module.exports = {
   evaluate(text) {
-    const result = sentiment(text);
+    const words = text.toLowerCase().trim().split(/\s+/);
+    const total = words.length || 1;
 
-    // sentiment-lite returns an integer score
-    // negative → negative
-    // positive → positive
-    // We map this to positivity ratio:
+    let positiveCount = 0;
+    for (let w of words) {
+      if (positiveWords.includes(w)) {
+        positiveCount++;
+      }
+    }
 
-    const words = text.trim().split(/\s+/).length || 1;
-    const positivity = Math.max(0, result.score) / words; // 0 → ~1 scale
+    const posScore = positiveCount / total; // 0 → 1 scale
 
     let score = 0;
 
-    /*
-      Rubric:
-      >=0.9 → 15
-      0.7–0.89 → 12
-      0.5–0.69 → 9
-      0.3–0.49 → 6
-      <0.3 → 3
-    */
-
-    if (positivity >= 0.9) score = 15;
-    else if (positivity >= 0.7) score = 12;
-    else if (positivity >= 0.5) score = 9;
-    else if (positivity >= 0.3) score = 6;
+    // Map to rubric (Engagement/Sentiment = 15 pts)
+    if (posScore >= 0.9) score = 15;
+    else if (posScore >= 0.7) score = 12;
+    else if (posScore >= 0.5) score = 9;
+    else if (posScore >= 0.3) score = 6;
     else score = 3;
 
     return {
