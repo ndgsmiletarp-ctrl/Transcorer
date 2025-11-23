@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rule-Based Transcript Scorer</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- html2canvas + jsPDF for PDF export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>Transcript Scorer</h1>
+      <small class="subtitle">Rule-based scoring · No AI models</small>
+    </div>
+
+    <div class="header-right">
+      <a class="rubric-link" id="rubricLink" href="/mnt/data/Case study for interns.xlsx.pdf" target="_blank" rel="noopener">View Rubric (PDF)</a>
+
+      <label class="theme-toggle">
+        <input id="themeToggle" type="checkbox" aria-label="Toggle dark mode">
+        <span class="toggle-slider"></span>
+      </label>
+      <span id="themeText" class="theme-text">Light</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- LEFT: Input panel -->
+    <section class="panel panel-left">
+      <h2>Input</h2>
+
+      <label for="transcript">Transcript</label>
+      <textarea id="transcript" placeholder="Paste transcript text here..."></textarea>
+
+      <div class="row small">
+        <div class="field">
+          <label for="duration">Duration (seconds)</label>
+          <input id="duration" type="number" min="1" placeholder="e.g. 60" />
+        </div>
+
+        <div class="field">
+          <label for="fileInput">Upload .txt</label>
+          <input id="fileInput" type="file" accept=".txt" />
+        </div>
+      </div>
+
+      <div class="row actions">
+        <button id="sampleBtn" class="btn">Load Sample</button>
+        <button id="resetBtn" class="btn ghost">Reset</button>
+        <button id="scoreBtn" class="btn primary">Score Transcript</button>
+      </div>
+
+      <div id="formMessage" class="form-message" aria-live="polite"></div>
+
+      <details class="notes">
+        <summary>Quick notes</summary>
+        <ul>
+          <li>Paste text or upload a <code>.txt</code> file.</li>
+          <li>Duration should be the spoken length in seconds.</li>
+          <li>Scoring follows the rubric in the provided PDF.</li>
+        </ul>
+      </details>
+    </section>
+
+    <!-- RIGHT: Results panel -->
+    <section class="panel panel-right">
+      <div id="loader" class="loader hidden" aria-hidden="true">
+        <div class="spinner" role="status" aria-hidden="true"></div>
+        <div class="loader-text">Scoring transcript...</div>
+      </div>
+
+      <div id="results" class="results hidden" aria-live="polite">
+        <div class="top-row">
+          <div class="score-circle">
+            <div class="score-number" id="overallScore">0</div>
+            <div class="score-label">Overall</div>
+          </div>
+
+          <div class="mini-cards">
+            <div class="mini">
+              <div class="mini-title">Words</div>
+              <div id="wordCount" class="mini-value">0</div>
+            </div>
+            <div class="mini">
+              <div class="mini-title">Sentences</div>
+              <div id="sentenceCount" class="mini-value">0</div>
+            </div>
+            <div class="mini">
+              <div class="mini-title">WPM</div>
+              <div id="wpm" class="mini-value">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="middle-row">
+          <div class="metrics">
+            <h3>Metric scores</h3>
+            <table id="metricsTable" class="metrics-table" aria-describedby="metricsDesc">
+              <caption id="metricsDesc" class="sr-only">Per-metric scores and feedback</caption>
+              <thead>
+                <tr><th>Metric</th><th>Score</th><th>Max</th><th>Feedback</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="chart">
+            <h3>Category chart</h3>
+            <canvas id="metricsChart" width="400" height="320" aria-label="Bar chart of metric percentages"></canvas>
+          </div>
+        </div>
+
+        <div class="bottom-row">
+          <div id="suggestions" class="suggestions">
+            <h3>Improvement suggestions</h3>
+            <ul id="suggestionsList"></ul>
+          </div>
+
+          <div class="result-actions">
+            <button id="downloadJson" class="btn">Download JSON</button>
+            <button id="exportPdf" class="btn">Export PDF</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <small>Built with HTML • CSS • JavaScript — No AI used for scoring</small>
+  </footer>
+
+  <!-- Main script -->
+  <script src="script.js"></script>
+</body>
+</html>
