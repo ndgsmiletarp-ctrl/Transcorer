@@ -1,0 +1,9 @@
+# Backend dependencies used in this project
+express
+firebase-functions
+firebase-admin
+natural
+vader-sentiment
+node-fetch
+pdfkit
+cors
